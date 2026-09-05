@@ -11,7 +11,9 @@ Balance Sheet, P&L and Budget reports.
     "author": "Urban Furniture Team",
     "license": "LGPL-3",
     "depends": ["base", "account", "contacts", "sale", "purchase"],
-    "data": [],
+    "data": [
+        "views/res_partner_views.xml",
+    ],
     "installable": True,
     "application": True,
 }
