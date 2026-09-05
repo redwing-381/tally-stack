@@ -4,7 +4,7 @@
         <field name="name">ufa.budget.list</field>
         <field name="model">ufa.budget</field>
         <field name="arch" type="xml">
-            <list>
+            <tree>
                 <field name="name"/>
                 <field name="period_start"/>
                 <field name="period_end"/>
@@ -13,7 +13,7 @@
                 <field name="planned_amount"/>
                 <field name="actual_amount"/>
                 <field name="variance"/>
-            </list>
+            </tree>
         </field>
     </record>
 
@@ -44,7 +44,7 @@
     <record id="action_ufa_budget" model="ir.actions.act_window">
         <field name="name">Budgets</field>
         <field name="res_model">ufa.budget</field>
-        <field name="view_mode">list,form</field>
+        <field name="view_mode">tree,form</field>
     </record>
 
     <menuitem id="menu_ufa_budget_root"
