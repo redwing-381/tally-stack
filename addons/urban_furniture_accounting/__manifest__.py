@@ -17,6 +17,7 @@ Balance Sheet, P&L and Budget reports.
         "views/res_partner_views.xml",
         "views/budget_views.xml",
         "views/financial_report_views.xml",
+        "data/demo_master_data.xml",
     ],
     "installable": True,
     "application": True,
