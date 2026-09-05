@@ -24,6 +24,22 @@ services:
       - ./addons:/mnt/extra-addons
       - odoo-web-data:/var/lib/odoo
 
+  frontend:
+    build: ./frontend
+    depends_on:
+      - odoo
+    ports:
+      - "3000:3000"
+    environment:
+      ODOO_URL: http://odoo:8069
+      ODOO_DB: urban_furniture
+      NEXT_PUBLIC_ODOO_PUBLIC_URL: http://localhost:8069
+      # payment.provider is Admin/Settings-only, so the portal payment route
+      # can't look this id up over RPC — it's the Razorpay provider record's
+      # id (Settings > Payment Providers > Razorpay). Update if that record
+      # is ever recreated with a different id.
+      RAZORPAY_PROVIDER_ID: "11"
+
 volumes:
   odoo-db-data:
   odoo-web-data:

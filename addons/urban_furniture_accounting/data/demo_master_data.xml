@@ -31,6 +31,7 @@
         <field name="name">Office Chair</field>
         <field name="detailed_type">consu</field>
         <field name="purchase_method">purchase</field>
+        <field name="ufa_is_catalog" eval="True"/>
         <field name="list_price">3500.0</field>
         <field name="standard_price">2200.0</field>
         <field name="categ_id" ref="product.product_category_all"/>
@@ -40,6 +41,7 @@
         <field name="name">Wooden Table</field>
         <field name="detailed_type">consu</field>
         <field name="purchase_method">purchase</field>
+        <field name="ufa_is_catalog" eval="True"/>
         <field name="list_price">8500.0</field>
         <field name="standard_price">5500.0</field>
         <field name="categ_id" ref="product.product_category_all"/>
@@ -49,6 +51,7 @@
         <field name="name">Sofa</field>
         <field name="detailed_type">consu</field>
         <field name="purchase_method">purchase</field>
+        <field name="ufa_is_catalog" eval="True"/>
         <field name="list_price">18000.0</field>
         <field name="standard_price">12000.0</field>
         <field name="categ_id" ref="product.product_category_all"/>
@@ -58,8 +61,19 @@
         <field name="name">Dining Table</field>
         <field name="detailed_type">consu</field>
         <field name="purchase_method">purchase</field>
+        <field name="ufa_is_catalog" eval="True"/>
         <field name="list_price">15000.0</field>
         <field name="standard_price">10000.0</field>
+        <field name="categ_id" ref="product.product_category_all"/>
+    </record>
+
+    <record id="product_test_item" model="product.template">
+        <field name="name">Test Item</field>
+        <field name="detailed_type">consu</field>
+        <field name="purchase_method">purchase</field>
+        <field name="ufa_is_catalog" eval="True"/>
+        <field name="list_price">10.0</field>
+        <field name="standard_price">5.0</field>
         <field name="categ_id" ref="product.product_category_all"/>
     </record>
 
