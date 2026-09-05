@@ -16,6 +16,7 @@ Balance Sheet, P&L and Budget reports.
         "security/ir.model.access.csv",
         "views/res_partner_views.xml",
         "views/budget_views.xml",
+        "views/financial_report_views.xml",
     ],
     "installable": True,
     "application": True,

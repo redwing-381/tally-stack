@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_ufa_financial_report_wizard_form" model="ir.ui.view">
+        <field name="name">ufa.financial.report.wizard.form</field>
+        <field name="model">ufa.financial.report.wizard</field>
+        <field name="arch" type="xml">
+            <form>
+                <group>
+                    <field name="report_type" invisible="1"/>
+                    <field name="date_from" invisible="report_type == 'balance_sheet'"/>
+                    <field name="date_to"/>
+                    <field name="currency_id" invisible="1"/>
+                </group>
+                <footer>
+                    <button name="action_generate" type="object" string="Generate" class="btn-primary"/>
+                </footer>
+                <field name="line_ids">
+                    <list editable="bottom" create="false" delete="false">
+                        <field name="section"/>
+                        <field name="account_id"/>
+                        <field name="balance" sum="Total"/>
+                    </list>
+                </field>
+                <group invisible="report_type != 'profit_loss'">
+                    <field name="net_result"/>
+                </group>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_ufa_balance_sheet" model="ir.actions.act_window">
+        <field name="name">Balance Sheet</field>
+        <field name="res_model">ufa.financial.report.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="context">{'default_report_type': 'balance_sheet'}</field>
+    </record>
+
+    <record id="action_ufa_profit_loss" model="ir.actions.act_window">
+        <field name="name">Profit &amp; Loss</field>
+        <field name="res_model">ufa.financial.report.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="context">{'default_report_type': 'profit_loss'}</field>
+    </record>
+
+    <menuitem id="menu_ufa_balance_sheet"
+              name="Balance Sheet"
+              parent="menu_ufa_budget_root"
+              action="action_ufa_balance_sheet"
+              sequence="20"/>
+
+    <menuitem id="menu_ufa_profit_loss"
+              name="Profit &amp; Loss"
+              parent="menu_ufa_budget_root"
+              action="action_ufa_profit_loss"
+              sequence="30"/>
+</odoo>
