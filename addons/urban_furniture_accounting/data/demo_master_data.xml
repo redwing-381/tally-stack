@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <!-- Matches the worked examples in the problem statement PDF, so the
+         demo can walk through PO/SO flows with recognizable names. -->
+
+    <record id="partner_rahul_sharma" model="res.partner">
+        <field name="name">Rahul Sharma</field>
+        <field name="company_type">person</field>
+        <field name="partner_type">vendor</field>
+        <field name="email">rahul.sharma@example.com</field>
+        <field name="phone">+91 90000 00001</field>
+        <field name="city">Mumbai</field>
+        <field name="state_id" ref="base.state_in_mh"/>
+        <field name="zip">400001</field>
+        <field name="country_id" ref="base.in"/>
+    </record>
+
+    <record id="partner_nimesh_pathak" model="res.partner">
+        <field name="name">Nimesh Pathak</field>
+        <field name="company_type">person</field>
+        <field name="partner_type">customer</field>
+        <field name="email">nimesh.pathak@example.com</field>
+        <field name="phone">+91 90000 00002</field>
+        <field name="city">Pune</field>
+        <field name="state_id" ref="base.state_in_mh"/>
+        <field name="zip">411001</field>
+        <field name="country_id" ref="base.in"/>
+    </record>
+
+    <record id="product_office_chair" model="product.template">
+        <field name="name">Office Chair</field>
+        <field name="detailed_type">consu</field>
+        <field name="list_price">3500.0</field>
+        <field name="standard_price">2200.0</field>
+        <field name="categ_id" ref="product.product_category_all"/>
+    </record>
+
+    <record id="product_wooden_table" model="product.template">
+        <field name="name">Wooden Table</field>
+        <field name="detailed_type">consu</field>
+        <field name="list_price">8500.0</field>
+        <field name="standard_price">5500.0</field>
+        <field name="categ_id" ref="product.product_category_all"/>
+    </record>
+
+    <record id="product_sofa" model="product.template">
+        <field name="name">Sofa</field>
+        <field name="detailed_type">consu</field>
+        <field name="list_price">18000.0</field>
+        <field name="standard_price">12000.0</field>
+        <field name="categ_id" ref="product.product_category_all"/>
+    </record>
+
+    <record id="product_dining_table" model="product.template">
+        <field name="name">Dining Table</field>
+        <field name="detailed_type">consu</field>
+        <field name="list_price">15000.0</field>
+        <field name="standard_price">10000.0</field>
+        <field name="categ_id" ref="product.product_category_all"/>
+    </record>
+</odoo>
