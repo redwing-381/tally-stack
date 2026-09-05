@@ -30,6 +30,7 @@
     <record id="product_office_chair" model="product.template">
         <field name="name">Office Chair</field>
         <field name="detailed_type">consu</field>
+        <field name="purchase_method">purchase</field>
         <field name="list_price">3500.0</field>
         <field name="standard_price">2200.0</field>
         <field name="categ_id" ref="product.product_category_all"/>
@@ -38,6 +39,7 @@
     <record id="product_wooden_table" model="product.template">
         <field name="name">Wooden Table</field>
         <field name="detailed_type">consu</field>
+        <field name="purchase_method">purchase</field>
         <field name="list_price">8500.0</field>
         <field name="standard_price">5500.0</field>
         <field name="categ_id" ref="product.product_category_all"/>
@@ -46,6 +48,7 @@
     <record id="product_sofa" model="product.template">
         <field name="name">Sofa</field>
         <field name="detailed_type">consu</field>
+        <field name="purchase_method">purchase</field>
         <field name="list_price">18000.0</field>
         <field name="standard_price">12000.0</field>
         <field name="categ_id" ref="product.product_category_all"/>
@@ -54,8 +57,21 @@
     <record id="product_dining_table" model="product.template">
         <field name="name">Dining Table</field>
         <field name="detailed_type">consu</field>
+        <field name="purchase_method">purchase</field>
         <field name="list_price">15000.0</field>
         <field name="standard_price">10000.0</field>
         <field name="categ_id" ref="product.product_category_all"/>
+    </record>
+
+    <!-- Odoo 17 requires every analytic account to belong to a plan.
+         Seed one default plan + account so Budgets are usable without
+         extra setup on first install. -->
+    <record id="analytic_plan_default" model="account.analytic.plan">
+        <field name="name">Urban Furniture Projects</field>
+    </record>
+
+    <record id="analytic_account_default" model="account.analytic.account">
+        <field name="name">General</field>
+        <field name="plan_id" ref="analytic_plan_default"/>
     </record>
 </odoo>
