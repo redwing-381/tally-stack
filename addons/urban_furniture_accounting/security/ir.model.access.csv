@@ -1,3 +1,7 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
 access_ufa_budget_admin,ufa.budget.admin,model_ufa_budget,group_urban_admin,1,1,1,1
 access_ufa_budget_invoicing_user,ufa.budget.invoicing_user,model_ufa_budget,group_urban_invoicing_user,1,1,1,0
+access_ufa_fin_report_wizard_admin,ufa.financial.report.wizard.admin,model_ufa_financial_report_wizard,group_urban_admin,1,1,1,1
+access_ufa_fin_report_wizard_invoicing_user,ufa.financial.report.wizard.invoicing_user,model_ufa_financial_report_wizard,group_urban_invoicing_user,1,1,1,1
+access_ufa_fin_report_line_admin,ufa.financial.report.line.admin,model_ufa_financial_report_line,group_urban_admin,1,1,1,1
+access_ufa_fin_report_line_invoicing_user,ufa.financial.report.line.invoicing_user,model_ufa_financial_report_line,group_urban_invoicing_user,1,1,1,1
