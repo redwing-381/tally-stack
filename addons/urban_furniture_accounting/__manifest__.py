@@ -12,6 +12,8 @@ Balance Sheet, P&L and Budget reports.
     "license": "LGPL-3",
     "depends": ["base", "account", "contacts", "sale", "purchase"],
     "data": [
+        "security/urban_furniture_groups.xml",
+        "security/ir.model.access.csv",
         "views/res_partner_views.xml",
     ],
     "installable": True,
