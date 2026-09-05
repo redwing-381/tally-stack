@@ -15,6 +15,7 @@ Balance Sheet, P&L and Budget reports.
         "security/urban_furniture_groups.xml",
         "security/ir.model.access.csv",
         "views/res_partner_views.xml",
+        "views/budget_views.xml",
     ],
     "installable": True,
     "application": True,
