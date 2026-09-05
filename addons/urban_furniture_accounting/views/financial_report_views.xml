@@ -15,11 +15,11 @@
                     <button name="action_generate" type="object" string="Generate" class="btn-primary"/>
                 </footer>
                 <field name="line_ids">
-                    <list editable="bottom" create="false" delete="false">
+                    <tree editable="bottom" create="false" delete="false">
                         <field name="section"/>
                         <field name="account_id"/>
                         <field name="balance" sum="Total"/>
-                    </list>
+                    </tree>
                 </field>
                 <group invisible="report_type != 'profit_loss'">
                     <field name="net_result"/>
