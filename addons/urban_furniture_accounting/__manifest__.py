@@ -10,7 +10,7 @@ Balance Sheet, P&L and Budget reports.
     "category": "Accounting/Accounting",
     "author": "Urban Furniture Team",
     "license": "LGPL-3",
-    "depends": ["base", "account", "contacts", "sale", "purchase"],
+    "depends": ["base", "account", "contacts", "sale", "purchase", "auth_signup"],
     "data": [
         "security/urban_furniture_groups.xml",
         "security/ir.model.access.csv",

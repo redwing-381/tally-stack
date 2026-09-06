@@ -5,38 +5,35 @@ export const SESSION_COOKIE = "ufa_session";
 export const PERSONA_COOKIE = "ufa_persona";
 export const NAME_COOKIE = "ufa_name";
 
-const GROUP_XMLIDS = ["group_urban_admin", "group_urban_invoicing_user"] as const;
+const ODOO_URL = process.env.ODOO_URL ?? "http://localhost:8069";
 
 let groupIdCache: { admin: number; invoicing: number } | null = null;
 
 /**
  * Resolves the two custom security groups' numeric res_ids once and caches
  * them for the life of the server process — they never change for a given
- * database. Avoids re-querying ir.model.data on every login.
+ * database. Goes through the addon's own sudo()'d public endpoint rather
+ * than reading ir.model.data under the logging-in user's own session: that
+ * model is Admin/Settings-only, so an Invoicing User (exactly the kind of
+ * account this app's own signup form creates) logging in first against a
+ * cold cache would otherwise fail outright with an AccessError — verified
+ * live after a server restart.
  */
-async function resolveGroupIds(sessionId: string) {
+async function resolveGroupIds() {
   if (groupIdCache) return groupIdCache;
 
-  const rows = await callKwWithSession<Array<{ name: string; res_id: number }>>(
-    sessionId,
-    "ir.model.data",
-    "search_read",
-    [
-      [
-        ["module", "=", "urban_furniture_accounting"],
-        ["name", "in", GROUP_XMLIDS],
-      ],
-      ["name", "res_id"],
-    ],
-  );
-
-  const admin = rows.find((r) => r.name === "group_urban_admin")?.res_id;
-  const invoicing = rows.find((r) => r.name === "group_urban_invoicing_user")?.res_id;
-  if (!admin || !invoicing) {
+  const res = await fetch(`${ODOO_URL}/urban_furniture/group_ids`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ jsonrpc: "2.0", method: "call", params: {} }),
+    cache: "no-store",
+  });
+  const { result } = (await res.json()) as { result?: { admin: number; invoicing: number } };
+  if (!result?.admin || !result?.invoicing) {
     throw new Error("Could not resolve Urban Furniture security groups");
   }
 
-  groupIdCache = { admin, invoicing };
+  groupIdCache = result;
   return groupIdCache;
 }
 
@@ -45,15 +42,6 @@ async function resolveGroupIds(sessionId: string) {
  * res.users — no new backend fields. `share` is Odoo's own signal for
  * portal/public users; group membership distinguishes Admin from
  * Invoicing User for internal users.
- *
- * `share` is checked before ever touching ir.model.data: that model is
- * Admin/Settings-only, so a portal session can't read it (verified live —
- * it raises AccessError). Resolving group ids up front in parallel used to
- * mask this, since the module-level cache only needed one successful
- * internal-user login per server process to warm up — but a portal user
- * logging in first against a cold cache (e.g. right after a restart) would
- * fail outright. Sequencing on `share` first means a portal session never
- * makes that call at all.
  */
 export async function classifyPersona(
   sessionId: string,
@@ -67,7 +55,7 @@ export async function classifyPersona(
     return { persona: "portal", name: user.name };
   }
 
-  const { admin, invoicing } = await resolveGroupIds(sessionId);
+  const { admin, invoicing } = await resolveGroupIds();
   if (user.groups_id.includes(admin)) {
     return { persona: "admin", name: user.name };
   }

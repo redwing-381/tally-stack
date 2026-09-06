@@ -17,6 +17,7 @@ import {
   ScrollText,
   FileText,
   LogOut,
+  UserCog,
 } from "lucide-react";
 import type { Persona } from "@/lib/odoo/types";
 import { cn } from "@/lib/utils";
@@ -56,6 +57,13 @@ const NAV_GROUPS = [
   },
 ];
 
+// Admin-only — granting logins is a Settings-level action in Odoo, which
+// this app otherwise never exposes to the Invoicing User persona.
+const ADMIN_ONLY_GROUP = {
+  label: "Team",
+  items: [{ href: "/users", label: "Users", icon: UserCog, match: "/users" }],
+};
+
 const PORTAL_GROUPS = [
   {
     label: null,
@@ -73,7 +81,9 @@ const PERSONA_LABEL: Record<Persona, string> = {
 export function Sidebar({ persona, name }: { persona: Persona; name: string }) {
   const pathname = usePathname();
   const router = useRouter();
-  const groups = persona === "portal" ? PORTAL_GROUPS : NAV_GROUPS;
+  const groups =
+    persona === "portal" ? PORTAL_GROUPS : persona === "admin" ? [...NAV_GROUPS, ADMIN_ONLY_GROUP] : NAV_GROUPS;
+  const homeHref = persona === "portal" ? "/portal/invoices" : "/dashboard";
 
   async function logout() {
     await fetch("/api/auth/logout", { method: "POST" });
@@ -83,13 +93,13 @@ export function Sidebar({ persona, name }: { persona: Persona; name: string }) {
 
   return (
     <aside className="flex h-screen w-56 shrink-0 flex-col bg-sidebar text-sidebar-foreground print:hidden">
-      <div className="flex shrink-0 items-center gap-3 px-5 py-6">
+      <Link href={homeHref} className="flex shrink-0 items-center gap-3 px-5 py-6">
         <Image src="/logo-mark.png" alt="" width={36} height={36} className="shrink-0" />
         <div>
           <p className="font-heading text-xl italic">Tally Stack</p>
           <p className="mt-0.5 text-xs text-sidebar-foreground/60">Urban Furniture</p>
         </div>
-      </div>
+      </Link>
 
       <nav className="min-h-0 flex-1 space-y-4 overflow-y-auto px-3 pb-4">
         {groups.map((group, i) => (

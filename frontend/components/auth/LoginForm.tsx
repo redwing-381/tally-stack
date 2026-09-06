@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -42,8 +43,17 @@ export function LoginForm() {
     }
   }
 
+  const notice = params.get("reset")
+    ? "Password reset — sign in with your new password."
+    : params.get("created")
+      ? "Account created — sign in to continue."
+      : null;
+
   return (
     <form onSubmit={onSubmit} className="space-y-5 border border-border bg-card p-8">
+      {notice && (
+        <p className="border-l-2 border-primary pl-3 text-sm text-foreground">{notice}</p>
+      )}
       <div className="space-y-1.5">
         <Label htmlFor="login">Login</Label>
         <Input
@@ -56,7 +66,12 @@ export function LoginForm() {
         />
       </div>
       <div className="space-y-1.5">
-        <Label htmlFor="password">Password</Label>
+        <div className="flex items-center justify-between">
+          <Label htmlFor="password">Password</Label>
+          <Link href="/forgot-password" className="text-xs text-accent hover:underline">
+            Forgot password?
+          </Link>
+        </div>
         <Input
           id="password"
           type="password"
@@ -78,6 +93,13 @@ export function LoginForm() {
       >
         {pending ? "Signing in…" : "Sign in"}
       </Button>
+
+      <p className="text-center text-sm text-muted-foreground">
+        New here?{" "}
+        <Link href="/signup" className="text-accent hover:underline">
+          Create an account
+        </Link>
+      </p>
     </form>
   );
 }

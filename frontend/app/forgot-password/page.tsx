@@ -1,0 +1,18 @@
+import Image from "next/image";
+import { ForgotPasswordForm } from "@/components/auth/ForgotPasswordForm";
+
+export default function ForgotPasswordPage() {
+  return (
+    <main className="flex min-h-screen items-center justify-center bg-background px-6">
+      <div className="w-full max-w-sm">
+        <div className="mb-10 flex flex-col items-center text-center">
+          <Image src="/logo-mark.png" alt="" width={72} height={72} />
+          <p className="mt-4 font-heading text-3xl italic text-foreground">Tally Stack</p>
+          <p className="mt-1 text-sm text-muted-foreground">Reset your password</p>
+        </div>
+
+        <ForgotPasswordForm />
+      </div>
+    </main>
+  );
+}

@@ -14,6 +14,7 @@ services:
     image: odoo:17.0
     depends_on:
       - db
+      - mailpit
     ports:
       - "8069:8069"
     environment:
@@ -23,6 +24,14 @@ services:
     volumes:
       - ./addons:/mnt/extra-addons
       - odoo-web-data:/var/lib/odoo
+
+  # Local mail catcher — Odoo sends real SMTP mail here instead of a live
+  # provider, so the forgot-password / signup flows can be demoed end to
+  # end without real email credentials. View caught mail at localhost:8025.
+  mailpit:
+    image: axllent/mailpit
+    ports:
+      - "8025:8025"
 
   frontend:
     build: ./frontend

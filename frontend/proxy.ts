@@ -11,18 +11,20 @@ import { SESSION_COOKIE, PERSONA_COOKIE } from "@/lib/odoo/session";
  * written: a portal session can only ever fetch its own partner's records,
  * no matter which route hits it.
  */
+const PUBLIC_PATHS = ["/login", "/forgot-password", "/signup", "/reset-password"];
+
 export function proxy(request: NextRequest) {
   const hasSession = request.cookies.has(SESSION_COOKIE);
   const persona = request.cookies.get(PERSONA_COOKIE)?.value;
   const { pathname } = request.nextUrl;
 
-  if (!hasSession && pathname !== "/login") {
+  if (!hasSession && !PUBLIC_PATHS.includes(pathname)) {
     const url = new URL("/login", request.url);
     url.searchParams.set("next", pathname);
     return NextResponse.redirect(url);
   }
 
-  if (hasSession && pathname === "/login") {
+  if (hasSession && PUBLIC_PATHS.includes(pathname)) {
     const home = persona === "portal" ? "/portal/invoices" : "/dashboard";
     return NextResponse.redirect(new URL(home, request.url));
   }
