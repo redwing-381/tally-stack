@@ -111,7 +111,13 @@ export async function saveAnalyticAccount(
 
 export async function createSaleOrder(
   partnerId: number,
-  lines: { productId: number; qty: number; priceUnit?: number; taxIds?: number[] }[],
+  lines: {
+    productId: number;
+    qty: number;
+    priceUnit?: number;
+    taxIds?: number[];
+    analyticAccountId?: number;
+  }[],
 ) {
   const orderId = await callKw<number>("sale.order", "create", [
     {
@@ -126,6 +132,13 @@ export async function createSaleOrder(
           // lets Odoo apply the product's own price and default tax.
           ...(l.priceUnit === undefined ? {} : { price_unit: l.priceUnit }),
           ...(l.taxIds === undefined ? {} : { tax_id: [[6, 0, l.taxIds]] }),
+          // Odoo carries this onto the invoice line it later generates, and
+          // posting the invoice is what turns it into an account.analytic.line
+          // — the actual figure a Budget's "Actual" column is computed from.
+          // Without this, a Budget's Actual can never move off zero.
+          ...(l.analyticAccountId === undefined
+            ? {}
+            : { analytic_distribution: { [l.analyticAccountId]: 100 } }),
         },
       ]),
     },
@@ -174,7 +187,13 @@ export async function createSaleInvoice(orderId: number) {
 
 export async function createPurchaseOrder(
   partnerId: number,
-  lines: { productId: number; qty: number; priceUnit?: number; taxIds?: number[] }[],
+  lines: {
+    productId: number;
+    qty: number;
+    priceUnit?: number;
+    taxIds?: number[];
+    analyticAccountId?: number;
+  }[],
 ) {
   const orderId = await callKw<number>("purchase.order", "create", [
     {
@@ -187,6 +206,9 @@ export async function createPurchaseOrder(
           product_qty: l.qty,
           ...(l.priceUnit === undefined ? {} : { price_unit: l.priceUnit }),
           ...(l.taxIds === undefined ? {} : { taxes_id: [[6, 0, l.taxIds]] }),
+          ...(l.analyticAccountId === undefined
+            ? {}
+            : { analytic_distribution: { [l.analyticAccountId]: 100 } }),
         },
       ]),
     },

@@ -43,12 +43,14 @@ export function NewOrderDialog({
   partners,
   products,
   taxes,
+  analyticAccounts,
   partnerLabel,
 }: {
   kind: "sale" | "purchase";
   partners: Option[];
   products: Option[];
   taxes: Option[];
+  analyticAccounts: Option[];
   partnerLabel: string;
 }) {
   const router = useRouter();
@@ -56,6 +58,7 @@ export function NewOrderDialog({
   const [pending, startTransition] = useTransition();
   const [partnerId, setPartnerId] = useState<string>("");
   const [lines, setLines] = useState<Line[]>([{ ...EMPTY_LINE }]);
+  const [analyticAccountId, setAnalyticAccountId] = useState<string>("none");
 
   function updateLine(i: number, patch: Partial<Line>) {
     setLines((prev) => prev.map((l, idx) => (idx === i ? { ...l, ...patch } : l)));
@@ -71,6 +74,7 @@ export function NewOrderDialog({
         qty: Number(l.qty) || 1,
         ...(l.priceUnit.trim() === "" ? {} : { priceUnit: Number(l.priceUnit) }),
         ...(l.taxId === "default" ? {} : { taxIds: l.taxId === "none" ? [] : [Number(l.taxId)] }),
+        ...(analyticAccountId === "none" ? {} : { analyticAccountId: Number(analyticAccountId) }),
       }));
 
     if (!partnerId || parsedLines.length === 0) return;
@@ -122,6 +126,33 @@ export function NewOrderDialog({
                 ))}
               </SelectContent>
             </Select>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>Analytic account</Label>
+            <Select
+              items={[
+                { value: "none", label: "None" },
+                ...analyticAccounts.map((a) => ({ value: String(a.id), label: a.name })),
+              ]}
+              value={analyticAccountId}
+              onValueChange={(v) => setAnalyticAccountId(v ?? "none")}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">None</SelectItem>
+                {analyticAccounts.map((a) => (
+                  <SelectItem key={a.id} value={String(a.id)}>
+                    {a.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              Tags every line so a Budget against this account can track it as actual spend.
+            </p>
           </div>
 
           <div className="space-y-2">

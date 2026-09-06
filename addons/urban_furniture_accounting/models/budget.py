@@ -39,11 +39,26 @@ class UfaBudget(models.Model):
         for budget in self:
             actual = 0.0
             if budget.analytic_account_id and budget.period_start and budget.period_end:
+                # account.analytic.line has no single "account_id" column in
+                # Odoo's multi-plan analytic accounting — each plan stores its
+                # account in its own dynamically-named column (auto_account_id,
+                # x_plan2_id, etc). Searching the literal "account_id" field
+                # silently matches nothing for any account outside the legacy
+                # default plan, which is why actual_amount always read 0 here —
+                # confirmed live by tracing a posted invoice's analytic line
+                # straight through to this column name.
+                column = budget.analytic_account_id.plan_id._column_name()
                 lines = AnalyticLine.search([
-                    ("account_id", "=", budget.analytic_account_id.id),
+                    (column, "=", budget.analytic_account_id.id),
                     ("date", ">=", budget.period_start),
                     ("date", "<=", budget.period_end),
                 ])
-                actual = sum(lines.mapped("amount"))
+                # Odoo's analytic convention signs expense postings negative
+                # and income postings positive (amount = -move_line.balance).
+                # A budget is a magnitude to track against a plan either way,
+                # so normalize to a positive "amount of activity" here rather
+                # than leaking that internal sign convention into a field
+                # whose whole job is a plain planned-vs-actual comparison.
+                actual = abs(sum(lines.mapped("amount")))
             budget.actual_amount = actual
             budget.variance = budget.planned_amount - actual

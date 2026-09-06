@@ -24,6 +24,7 @@ interface OrderDetail {
   date_order: string;
   amount_total: number;
   state: string;
+  invoice_status: string;
   invoice_ids: number[];
   order_line: number[];
 }
@@ -34,7 +35,7 @@ export default async function SaleOrderDetailPage(props: PageProps<"/sales/[id]"
 
   const [order] = await callKw<OrderDetail[]>("sale.order", "read", [
     [orderId],
-    ["name", "partner_id", "date_order", "amount_total", "state", "invoice_ids", "order_line"],
+    ["name", "partner_id", "date_order", "amount_total", "state", "invoice_status", "invoice_ids", "order_line"],
   ]);
   if (!order) notFound();
 
@@ -66,6 +67,10 @@ export default async function SaleOrderDetailPage(props: PageProps<"/sales/[id]"
         </div>
         <div className="flex items-center gap-3">
           <StatusBadge value={order.state} />
+          {/* Order state and billing state are separate lifecycles — a
+              confirmed ("Sale") order still needs its own badge to show
+              whether it's actually been invoiced, let alone paid. */}
+          <StatusBadge value={order.invoice_status} />
           <SaleOrderActions orderId={order.id} state={order.state} hasInvoice={order.invoice_ids.length > 0} />
         </div>
       </div>
@@ -111,6 +116,7 @@ export default async function SaleOrderDetailPage(props: PageProps<"/sales/[id]"
                   <Link href={`/invoices/${inv.id}`} className="font-medium hover:text-accent">
                     {inv.name}
                   </Link>
+                  <StatusBadge value={inv.state} />
                   <StatusBadge value={inv.payment_state} />
                 </div>
                 <div className="flex items-center gap-4">

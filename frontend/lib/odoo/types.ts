@@ -87,6 +87,7 @@ export interface SaleOrder {
   date_order: string;
   amount_total: number;
   state: "draft" | "sent" | "sale" | "cancel";
+  invoice_status: "upselling" | "invoiced" | "to invoice" | "no";
   invoice_ids: number[];
   currency_id: M2O;
 }
@@ -98,6 +99,7 @@ export interface PurchaseOrder {
   date_order: string;
   amount_total: number;
   state: "draft" | "sent" | "purchase" | "done" | "cancel";
+  invoice_status: "invoiced" | "to invoice" | "no";
   invoice_ids: number[];
   currency_id: M2O;
 }
@@ -140,9 +142,32 @@ export interface ReportLine {
 
 export interface DashboardSummary {
   outstandingReceivable: number;
+  overdueReceivable: number;
   outstandingPayable: number;
+  netPosition: number;
+  monthProfit: number;
   openSalesOrders: number;
   openPurchaseOrders: number;
+  salesPipeline: { value: number; count: number };
+  purchasePipeline: { value: number; count: number };
   budgets: { name: string; planned_amount: number; actual_amount: number }[];
+  monthlyTrend: { month: string; sales: number; purchases: number }[];
+  topOutstanding: {
+    id: number;
+    name: string;
+    partnerName: string;
+    amountResidual: number;
+    dueDate: string | false;
+  }[];
+  recentActivity: {
+    key: string;
+    type: "sale" | "purchase" | "invoice" | "bill" | "payment";
+    label: string;
+    name: string;
+    partnerName: string;
+    amount: number;
+    date: string;
+    href: string | null;
+  }[];
   currencySymbol: string;
 }

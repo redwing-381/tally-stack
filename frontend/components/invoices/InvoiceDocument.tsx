@@ -192,7 +192,11 @@ export async function InvoiceDocument({
           <div className="text-right">
             <h1 className="font-heading text-2xl">{docTitle}</h1>
             <p className="mt-1 font-mono text-sm">{invoice.name}</p>
-            <div className="mt-2">
+            {/* Document state and payment state are separate lifecycles —
+                "Posted" only means the entry is finalized, never that it's
+                been paid. */}
+            <div className="mt-2 flex justify-end gap-2">
+              <StatusBadge value={invoice.state} />
               <StatusBadge value={invoice.payment_state} />
             </div>
           </div>
