@@ -168,3 +168,122 @@ class UrbanFurnitureAuthController(http.Controller):
             return {"ok": False, "error": "Couldn't create the account. Try a different login."}
 
         return {"ok": True}
+
+    def _require_admin(self):
+        """res.users create/write is Settings-only in stock Odoo
+        (ir.model.access restricts it to group_erp_manager), which our
+        custom Admin group deliberately does NOT imply — it's scoped to
+        accounting/sales/purchase administration, not full Settings access.
+        So creating a user here always needs an explicit sudo(), gated by
+        checking the *caller* is one of our own Admins first — verified
+        live that an authenticated Urban Furniture Admin still gets a
+        plain AccessError calling res.users.create() directly without this.
+        """
+        if not request.env.user.has_group("urban_furniture_accounting.group_urban_admin"):
+            return {"ok": False, "error": "Only an Admin can do that."}
+        return None
+
+    @http.route(
+        "/urban_furniture/admin/create_invoicing_user",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def admin_create_invoicing_user(self, name=None, login=None, email=None, password=None, **kwargs):
+        """Admin-initiated: creates a real Invoicing User account, active
+        and able to sign in immediately with the password given here — no
+        separate reset-password step, same as a fresh Customer signup."""
+        denied = self._require_admin()
+        if denied:
+            return denied
+
+        env = request.env(su=True)
+        name = (name or "").strip()
+        login = (login or "").strip()
+        email = (email or "").strip()
+
+        if not name:
+            return {"ok": False, "error": "Name is required."}
+        if not (6 <= len(login) <= 12):
+            return {"ok": False, "error": "Login id must be between 6 and 12 characters."}
+        if env["res.users"].search_count([("login", "=", login)]):
+            return {"ok": False, "error": "That login id is already taken."}
+        if not email or "@" not in email:
+            return {"ok": False, "error": "Enter a valid email address."}
+        if not password or not PASSWORD_RE.match(password):
+            return {
+                "ok": False,
+                "error": (
+                    "Password must be more than 8 characters and include a lowercase "
+                    "letter, an uppercase letter, and a special character."
+                ),
+            }
+
+        invoicing_group = env.ref("urban_furniture_accounting.group_urban_invoicing_user")
+        try:
+            env["res.users"].create(
+                {
+                    "name": name,
+                    "login": login,
+                    "email": email,
+                    "password": password,
+                    "groups_id": [(6, 0, [env.ref("base.group_user").id, invoicing_group.id])],
+                }
+            )
+        except Exception:
+            _logger.exception("Admin-create invoicing user failed for login %r", login)
+            return {"ok": False, "error": "Couldn't create the account. Try a different login."}
+
+        return {"ok": True}
+
+    @http.route(
+        "/urban_furniture/admin/create_customer_login",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def admin_create_customer_login(self, partner_id=None, login=None, password=None, **kwargs):
+        """Admin-initiated portal access for a contact they pick directly —
+        unlike public /signup there's no email-matching step, since the
+        Admin is choosing a known contact from their own Contacts list."""
+        denied = self._require_admin()
+        if denied:
+            return denied
+
+        env = request.env(su=True)
+        login = (login or "").strip()
+
+        partner = env["res.partner"].browse(int(partner_id)) if partner_id else env["res.partner"]
+        if not partner.exists():
+            return {"ok": False, "error": "Contact not found."}
+        if partner.user_ids:
+            return {"ok": False, "error": "This contact already has a login."}
+        if not (6 <= len(login) <= 12):
+            return {"ok": False, "error": "Login id must be between 6 and 12 characters."}
+        if env["res.users"].search_count([("login", "=", login)]):
+            return {"ok": False, "error": "That login id is already taken."}
+        if not password or not PASSWORD_RE.match(password):
+            return {
+                "ok": False,
+                "error": (
+                    "Password must be more than 8 characters and include a lowercase "
+                    "letter, an uppercase letter, and a special character."
+                ),
+            }
+
+        try:
+            env["res.users"].create(
+                {
+                    "login": login,
+                    "password": password,
+                    "partner_id": partner.id,
+                    "groups_id": [(6, 0, [env.ref("base.group_portal").id])],
+                }
+            )
+        except Exception:
+            _logger.exception("Admin-create customer login failed for login %r", login)
+            return {"ok": False, "error": "Couldn't create the login. Try a different login id."}
+
+        return {"ok": True}
