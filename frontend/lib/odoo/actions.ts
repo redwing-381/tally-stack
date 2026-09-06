@@ -222,6 +222,17 @@ export async function confirmPurchaseOrder(orderId: number) {
   revalidatePath(`/purchases/${orderId}`);
 }
 
+/**
+ * Corrects a single draft order line's unit price — used by the agent's
+ * anomaly-fix flow. Draft only: a posted line needs a credit note/reversal,
+ * not a silent field edit.
+ */
+export async function fixOrderLinePrice(orderType: "sale" | "purchase", lineId: number, unitPrice: number) {
+  const model = orderType === "sale" ? "sale.order.line" : "purchase.order.line";
+  await callKw(model, "write", [[lineId], { price_unit: unitPrice }]);
+  revalidatePath(orderType === "sale" ? "/sales" : "/purchases");
+}
+
 export async function createPurchaseBill(orderId: number) {
   await callKw("purchase.order", "action_create_invoice", [[orderId]]);
   const [order] = await callKw<Array<{ invoice_ids: number[] }>>("purchase.order", "read", [

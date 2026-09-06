@@ -10,6 +10,7 @@ import {
   confirmPurchaseOrder,
   createPurchaseBill,
   registerPayment,
+  fixOrderLinePrice,
 } from "@/lib/odoo/actions";
 import { resolveJournal } from "@/lib/agent/lookups";
 import { PERSONA_COOKIE } from "@/lib/odoo/session";
@@ -89,6 +90,15 @@ export async function POST(req: Request) {
         await registerPayment(a.moveId, "/dashboard", journal.id);
         const [move] = await searchRead<{ name: string }>("account.move", [["id", "=", a.moveId]], ["name"]);
         return NextResponse.json({ ok: true, message: `Payment registered for ${move.name} via ${journal.name}.` });
+      }
+
+      case "fixPriceAnomaly": {
+        const a = args as { orderType: "sale" | "purchase"; lineId: number; correctedPrice: number };
+        await fixOrderLinePrice(a.orderType, a.lineId, a.correctedPrice);
+        return NextResponse.json({
+          ok: true,
+          message: `Unit price corrected to ₹${a.correctedPrice.toLocaleString("en-IN")}.`,
+        });
       }
 
       default:

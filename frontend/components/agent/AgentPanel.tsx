@@ -11,6 +11,7 @@ const EXAMPLE_PROMPTS = [
   "Create a purchase order for Rahul Sharma for 10 Wooden Tables",
   "Create a sales order for Nimesh Pathak for 5 Office Chairs",
   "What's the status of invoice INV/2026/00001?",
+  "Check the draft orders for pricing anomalies",
 ];
 
 function messageText(message: UIMessage): string {

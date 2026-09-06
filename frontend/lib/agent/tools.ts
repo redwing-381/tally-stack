@@ -8,6 +8,7 @@ import {
   resolveSaleOrder,
   resolvePurchaseOrder,
   resolveInvoice,
+  findPriceAnomalies,
 } from "@/lib/agent/lookups";
 
 /**
@@ -121,6 +122,31 @@ export const agentTools = {
     execute: async ({ reportType, dateFrom, dateTo }) => {
       const { netResult, lines } = await generateReport(null, reportType, dateTo, dateFrom ?? null);
       return { netResult, lines };
+    },
+  }),
+
+  detectAnomalies: tool({
+    description:
+      "Scan draft (not-yet-confirmed) sales and purchase orders for a line whose unit price looks like a " +
+      "data-entry mistake — wildly higher or lower than the product's own catalogue price. Use this when " +
+      "asked to check for anomalies, unusual transactions, or pricing mistakes.",
+    inputSchema: z.object({}),
+    execute: async () => {
+      const anomalies = await findPriceAnomalies();
+      if (anomalies.length === 0) {
+        return { message: "No pricing anomalies found in the current draft orders." };
+      }
+      return anomalies.map((a) => ({
+        orderType: a.orderType,
+        order: a.orderName,
+        lineId: a.lineId,
+        product: a.productName,
+        qty: a.qty,
+        currentUnitPrice: a.actualPrice,
+        catalogUnitPrice: a.catalogPrice,
+        currentLineTotal: a.actualPrice * a.qty,
+        expectedLineTotal: a.catalogPrice * a.qty,
+      }));
     },
   }),
 
@@ -272,6 +298,28 @@ export const agentTools = {
         toolName: "registerPayment",
         summary: `Register payment of ₹${invoice.amount_residual.toLocaleString("en-IN")} for ${invoice.name} via ${journal === "bank" ? "Bank" : "Cash"}`,
         args: { moveId: invoice.id, journal },
+      };
+    },
+  }),
+
+  fixPriceAnomaly: tool({
+    description:
+      "Propose correcting a line flagged by detectAnomalies back to the product's catalogue price. Only " +
+      "call this with a lineId/orderType that detectAnomalies actually returned.",
+    inputSchema: z.object({
+      orderType: z.enum(["sale", "purchase"]),
+      lineId: z.number(),
+      order: z.string().describe("The order's own number, for the confirmation summary."),
+      product: z.string(),
+      currentUnitPrice: z.number(),
+      catalogUnitPrice: z.number(),
+    }),
+    execute: async ({ orderType, lineId, order, product, currentUnitPrice, catalogUnitPrice }) => {
+      return {
+        requiresConfirmation: true as const,
+        toolName: "fixPriceAnomaly",
+        summary: `Correct ${product} on ${order} from ₹${currentUnitPrice.toLocaleString("en-IN")} to ₹${catalogUnitPrice.toLocaleString("en-IN")} per unit`,
+        args: { orderType, lineId, correctedPrice: catalogUnitPrice },
       };
     },
   }),

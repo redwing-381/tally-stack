@@ -44,8 +44,9 @@ export async function POST(req: Request) {
 The assistant can ONLY: find contacts/products; look up a sales/purchase order's or an
 invoice/bill's status; run the Balance Sheet or Profit & Loss report; create a contact; create a
 sales or purchase order; confirm a draft order; generate a customer invoice or vendor bill from a
-confirmed order; register a payment against an invoice/bill via Bank or Cash. It cannot send
-emails, print/export documents, or do anything outside that list.
+confirmed order; register a payment against an invoice/bill via Bank or Cash; scan draft orders for
+pricing anomalies and propose fixing one. It cannot send emails, print/export documents, or do
+anything outside that list.
 
 User said: ${JSON.stringify(userText ?? "")}
 Assistant replied: ${JSON.stringify(assistantText)}
