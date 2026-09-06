@@ -1,9 +1,12 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { Plus } from "lucide-react";
-import { searchRead } from "@/lib/odoo/client";
+import { searchRead, searchCount } from "@/lib/odoo/client";
 import type { Partner } from "@/lib/odoo/types";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Pagination } from "@/components/ui/pagination";
+import { PAGE_SIZE, parsePage, pageOffset, pageCount, buildPageHref } from "@/lib/pagination";
 import {
   Table,
   TableBody,
@@ -25,18 +28,30 @@ const FILTERS = [
 export default async function ContactsPage(props: PageProps<"/contacts">) {
   const searchParams = await props.searchParams;
   const filter = (Array.isArray(searchParams.type) ? searchParams.type[0] : searchParams.type) ?? "all";
+  const page = parsePage(searchParams.page);
 
   const domain = filter === "all" ? [] : [["partner_type", "=", filter]];
-  const contacts = await searchRead<Partner>(
-    "res.partner",
-    domain,
-    ["name", "partner_type", "email", "phone", "city"],
-    { order: "name" },
-  );
+  const [contacts, total] = await Promise.all([
+    searchRead<Partner>(
+      "res.partner",
+      domain,
+      ["name", "partner_type", "email", "phone", "city"],
+      { order: "name", limit: PAGE_SIZE, offset: pageOffset(page) },
+    ),
+    searchCount("res.partner", domain),
+  ]);
+
+  // Landing past the end — deep link, or the filter changed under a stored
+  // page number — snaps back to the last real page rather than showing an
+  // empty table with no way out.
+  const query = { type: filter === "all" ? undefined : filter };
+  if (total > 0 && page > 1 && contacts.length === 0) {
+    redirect(buildPageHref("/contacts", pageCount(total), query));
+  }
 
   return (
-    <div className="p-10">
-      <div className="flex items-center justify-between">
+    <div className="flex h-full flex-col p-10">
+      <div className="flex shrink-0 items-center justify-between">
         <div>
           <h1 className="font-heading text-2xl">Contacts</h1>
           <p className="mt-1 text-sm text-muted-foreground">Customers and vendors.</p>
@@ -101,6 +116,8 @@ export default async function ContactsPage(props: PageProps<"/contacts">) {
           )}
         </TableBody>
       </Table>
+
+      <Pagination page={page} total={total} basePath="/contacts" query={query} />
     </div>
   );
 }
