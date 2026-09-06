@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import { Sidebar } from "@/components/nav/Sidebar";
+import { AgentButton } from "@/components/agent/AgentButton";
 import { PERSONA_COOKIE, NAME_COOKIE } from "@/lib/odoo/session";
 import type { Persona } from "@/lib/odoo/types";
 
@@ -24,6 +25,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           children
         )}
       </div>
+      <AgentButton persona={persona} />
     </div>
   );
 }

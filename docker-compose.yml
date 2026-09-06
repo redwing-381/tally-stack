@@ -48,6 +48,10 @@ services:
       # id (Settings > Payment Providers > Razorpay). Update if that record
       # is ever recreated with a different id.
       RAZORPAY_PROVIDER_ID: "11"
+      # AI agent layer (natural-language transaction entry). Set your real
+      # key in a .env file at the repo root — see .env.example — never here.
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:?Set OPENROUTER_API_KEY in a .env file at the repo root (see .env.example)}
+      OPENROUTER_MODEL: ${OPENROUTER_MODEL:-openai/gpt-4o-mini}
 
 volumes:
   odoo-db-data:
