@@ -11,7 +11,11 @@ import { SESSION_COOKIE, PERSONA_COOKIE } from "@/lib/odoo/session";
  * written: a portal session can only ever fetch its own partner's records,
  * no matter which route hits it.
  */
-const PUBLIC_PATHS = ["/login", "/forgot-password", "/signup", "/reset-password"];
+// "/" is the marketing landing page. Listing it here does both halves of
+// what it needs: signed-out visitors reach it instead of bouncing to
+// /login, and signed-in ones skip straight past it to their own home —
+// which is what "/" already did before the landing page existed.
+const PUBLIC_PATHS = ["/", "/login", "/forgot-password", "/signup", "/reset-password"];
 
 export function proxy(request: NextRequest) {
   const hasSession = request.cookies.has(SESSION_COOKIE);
