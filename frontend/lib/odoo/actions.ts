@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { callKw } from "./client";
+import { istTodayIso } from "./date";
 
 // ---------------------------------------------------------------------------
 // Contacts
@@ -210,7 +211,9 @@ export async function createPurchaseBill(orderId: number) {
     // action_create_invoice() leaves a vendor bill's date unset — Odoo
     // rejects posting with "The Bill/Refund date is required" until it's
     // set. The native UI's manual "set Bill Date" step does the same thing.
-    const today = new Date().toISOString().slice(0, 10);
+    // istTodayIso (not raw UTC) so this agrees with the journal line's own
+    // date, which Odoo computes in the posting user's IST timezone.
+    const today = istTodayIso();
     await callKw("account.move", "write", [order.invoice_ids, { invoice_date: today }]);
     await callKw("account.move", "action_post", [order.invoice_ids]);
   }
