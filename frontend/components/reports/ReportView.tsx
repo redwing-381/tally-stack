@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { generateReport } from "@/lib/odoo/actions";
 import { formatMoney, formatDate } from "@/lib/format";
+import { istNow, istDateIso, istTodayIso } from "@/lib/odoo/date";
 import { ReportSummaryChart } from "@/components/charts/ReportSummaryChart";
 import { DownloadPdfButton } from "@/components/reports/DownloadPdfButton";
 import type { ReportSection } from "@/lib/odoo/types";
@@ -25,13 +26,19 @@ interface Line {
   balance: number;
 }
 
+// Both boundaries go through the IST helpers rather than raw
+// `new Date().toISOString()`. Building a local midnight and serialising it
+// to UTC walks the date back a day for every India-based user — the default
+// "from" for September rendered as 2026-08-31, quietly pulling an extra
+// day's postings into the P&L (dashboard read +₹3.88L profit for the month
+// while this report read a ₹13.2L loss over the same "month").
 function today() {
-  return new Date().toISOString().slice(0, 10);
+  return istTodayIso();
 }
 
 function firstOfMonth() {
-  const d = new Date();
-  return new Date(d.getFullYear(), d.getMonth(), 1).toISOString().slice(0, 10);
+  const now = istNow();
+  return istDateIso(now.getUTCFullYear(), now.getUTCMonth(), 1);
 }
 
 function Section({ section, lines }: { section: ReportSection; lines: Line[] }) {
