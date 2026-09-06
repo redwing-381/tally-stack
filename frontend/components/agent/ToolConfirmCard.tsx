@@ -12,7 +12,10 @@ export interface Proposal {
   args: Record<string, unknown>;
 }
 
-type Resolution = { status: "confirmed"; message: string } | { status: "cancelled" } | { status: "error"; message: string };
+export type Resolution =
+  | { status: "confirmed"; message: string }
+  | { status: "cancelled" }
+  | { status: "error"; message: string };
 
 /**
  * One proposed write action, rendered like the app's own ledger documents
@@ -20,7 +23,13 @@ type Resolution = { status: "confirmed"; message: string } | { status: "cancelle
  * so a proposed purchase order reads as a miniature version of the real
  * document it's about to create.
  */
-export function ToolConfirmCard({ proposal, onResolved }: { proposal: Proposal; onResolved?: () => void }) {
+export function ToolConfirmCard({
+  proposal,
+  onResolved,
+}: {
+  proposal: Proposal;
+  onResolved?: (resolution: Resolution) => void;
+}) {
   const [pending, setPending] = useState(false);
   const [resolution, setResolution] = useState<Resolution | null>(null);
 
@@ -33,20 +42,24 @@ export function ToolConfirmCard({ proposal, onResolved }: { proposal: Proposal; 
         body: JSON.stringify({ toolName: proposal.toolName, args: proposal.args }),
       });
       const data = await res.json();
-      setResolution(
-        data.ok ? { status: "confirmed", message: data.message } : { status: "error", message: data.error },
-      );
+      const next: Resolution = data.ok
+        ? { status: "confirmed", message: data.message }
+        : { status: "error", message: data.error };
+      setResolution(next);
+      onResolved?.(next);
     } catch {
-      setResolution({ status: "error", message: "Couldn't reach the server." });
+      const next: Resolution = { status: "error", message: "Couldn't reach the server." };
+      setResolution(next);
+      onResolved?.(next);
     } finally {
       setPending(false);
-      onResolved?.();
     }
   }
 
   function cancel() {
-    setResolution({ status: "cancelled" });
-    onResolved?.();
+    const next: Resolution = { status: "cancelled" };
+    setResolution(next);
+    onResolved?.(next);
   }
 
   if (resolution) {

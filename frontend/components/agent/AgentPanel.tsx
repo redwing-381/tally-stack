@@ -5,7 +5,7 @@ import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, isToolUIPart, type UIMessage } from "ai";
 import { Bot, Send, SquarePen, User, X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { ToolConfirmCard, type Proposal } from "@/components/agent/ToolConfirmCard";
+import { ToolConfirmCard, type Proposal, type Resolution } from "@/components/agent/ToolConfirmCard";
 
 const EXAMPLE_PROMPTS = [
   "Create a purchase order for Rahul Sharma for 10 Wooden Tables",
@@ -25,6 +25,7 @@ function messageText(message: UIMessage): string {
 export function AgentPanel({ onClose, onNewChat }: { onClose: () => void; onNewChat: () => void }) {
   const [input, setInput] = useState("");
   const [followUps, setFollowUps] = useState<string[]>([]);
+  const [resolutions, setResolutions] = useState<Record<string, Resolution>>({});
   const suggestedFor = useRef<string | null>(null);
   const { messages, sendMessage, status } = useChat({
     transport: new DefaultChatTransport({ api: "/api/agent/chat" }),
@@ -38,25 +39,65 @@ export function AgentPanel({ onClose, onNewChat }: { onClose: () => void; onNewC
   // Fetched separately from the main chat stream — see the route's comment
   // on why a cheap chat model can't be trusted to reliably call a
   // "suggest follow-ups" tool on its own.
+  //
+  // A message ending in a pending proposal isn't a finished turn yet — the
+  // user still has to hit Confirm/Cancel on the card, which happens outside
+  // the chat protocol entirely (see ToolConfirmCard). Asking for follow-ups
+  // right when the proposal appears means the model can only see "assistant
+  // proposed X, awaiting approval" and naturally suggests approving it —
+  // producing a chip that duplicates the card's own Confirm button. Clicking
+  // that chip re-sends the proposal as a new chat turn, which either asks to
+  // confirm all over again or, worse, re-runs a write tool against state the
+  // first confirm already changed (e.g. re-confirming an order that's no
+  // longer draft), which is the error the user hit. So: wait until every
+  // proposal in the last assistant message has actually been resolved
+  // (tracked in `resolutions`, set by ToolConfirmCard's onResolved) before
+  // asking for follow-ups, and tell the suggester what happened.
   useEffect(() => {
     if (status !== "ready" || messages.length === 0) return;
     const last = messages[messages.length - 1];
-    if (last.role !== "assistant" || suggestedFor.current === last.id) return;
-    const assistantText = messageText(last);
-    if (!assistantText) return;
+    if (last.role !== "assistant") return;
 
-    suggestedFor.current = last.id;
+    const proposalIds = last.parts
+      .filter(isToolUIPart)
+      .filter((p) => p.state === "output-available")
+      .filter((p) => {
+        const output = p.output as Proposal | { message?: string } | undefined;
+        return !!output && "requiresConfirmation" in output && output.requiresConfirmation;
+      })
+      .map((p) => p.toolCallId);
+
+    if (!proposalIds.every((id) => id in resolutions)) return; // still waiting on a Confirm/Cancel click
+
+    const suggestKey = last.id + ":" + proposalIds.map((id) => resolutions[id]?.status ?? "").join(",");
+    if (suggestedFor.current === suggestKey) return;
+
+    const assistantText = messageText(last);
+    const resolutionNote = proposalIds
+      .map((id) => resolutions[id])
+      .map((r) =>
+        r.status === "confirmed"
+          ? `The proposed action was confirmed and completed: ${r.message}`
+          : r.status === "cancelled"
+            ? "The proposed action was cancelled by the user."
+            : `The proposed action failed: ${r.message}`,
+      )
+      .join(" ");
+    const combinedAssistantText = [assistantText, resolutionNote].filter(Boolean).join(" ");
+    if (!combinedAssistantText) return;
+
+    suggestedFor.current = suggestKey;
     const priorUser = [...messages].slice(0, -1).reverse().find((m) => m.role === "user");
 
     fetch("/api/agent/suggest", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userText: priorUser ? messageText(priorUser) : "", assistantText }),
+      body: JSON.stringify({ userText: priorUser ? messageText(priorUser) : "", assistantText: combinedAssistantText }),
     })
       .then((res) => res.json())
       .then((data) => setFollowUps(Array.isArray(data.suggestions) ? data.suggestions : []))
       .catch(() => setFollowUps([]));
-  }, [status, messages]);
+  }, [status, messages, resolutions]);
 
   function submit(text: string) {
     const trimmed = text.trim();
@@ -144,7 +185,16 @@ export function AgentPanel({ onClose, onNewChat }: { onClose: () => void; onNewC
                     if (part.state === "output-available") {
                       const output = part.output as Proposal | { message?: string } | undefined;
                       if (output && "requiresConfirmation" in output && output.requiresConfirmation) {
-                        return <ToolConfirmCard key={part.toolCallId} proposal={output} />;
+                        return (
+                          <ToolConfirmCard
+                            key={part.toolCallId}
+                            proposal={output}
+                            onResolved={(resolution) => {
+                              setFollowUps([]);
+                              setResolutions((prev) => ({ ...prev, [part.toolCallId]: resolution }));
+                            }}
+                          />
+                        );
                       }
                       return null; // read-tool result — the assistant's own text narrates it
                     }

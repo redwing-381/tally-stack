@@ -51,11 +51,20 @@ anything outside that list.
 User said: ${JSON.stringify(userText ?? "")}
 Assistant replied: ${JSON.stringify(assistantText)}
 
+Proposed actions (creating/confirming/generating/paying) are approved or rejected with dedicated
+Confirm/Cancel buttons already shown in the UI, never by the user typing something — so if the
+reply mentions confirming, completing, cancelling, or the result of a proposal, that step is
+already over. NEVER suggest a message that asks to confirm, approve, retry, undo, or redo that
+same action (e.g. "Confirm it", "Yes, do it", "Confirm the correction") — the button already did
+that, and repeating it as a typed message re-runs the action against data that's already changed
+and errors out. Only suggest a genuinely NEXT, different step (e.g. "Generate the invoice for it",
+"Now check for other anomalies", "Register the payment").
+
 Suggest 2-4 short follow-up messages this user might naturally send next — written as something
-they'd actually type (e.g. "Confirm it", "Add 5 more Wooden Tables", "Show this month's P&L") —
-using ONLY the capabilities above, ideally continuing the exact order/invoice just discussed. Under
-8 words each. If the conversation has clearly ended (e.g. the user just said thanks) or nothing in
-the capability list fits, return an empty array rather than inventing something off-list.`,
+they'd actually type (e.g. "Add 5 more Wooden Tables", "Show this month's P&L") — using ONLY the
+capabilities above, ideally continuing the exact order/invoice just discussed. Under 8 words each.
+If the conversation has clearly ended (e.g. the user just said thanks) or nothing in the capability
+list fits, return an empty array rather than inventing something off-list.`,
     });
     return NextResponse.json({ suggestions: object.suggestions });
   } catch (err) {
