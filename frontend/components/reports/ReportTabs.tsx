@@ -13,7 +13,7 @@ const TABS = [
 export function ReportTabs() {
   const pathname = usePathname();
   return (
-    <div className="flex gap-1 border-b border-border">
+    <div className="flex gap-1 border-b border-border print:hidden">
       {TABS.map((t) => (
         <Link
           key={t.href}

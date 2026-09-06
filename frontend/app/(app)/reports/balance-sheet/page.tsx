@@ -4,8 +4,8 @@ import { ReportView } from "@/components/reports/ReportView";
 export default function BalanceSheetPage() {
   return (
     <div className="p-10">
-      <h1 className="font-heading text-2xl">Reports</h1>
-      <p className="mt-1 text-sm text-muted-foreground">
+      <h1 className="font-heading text-2xl print:hidden">Reports</h1>
+      <p className="mt-1 text-sm text-muted-foreground print:hidden">
         A cumulative snapshot of assets, liabilities and capital as of the chosen date.
       </p>
       <div className="mt-6">

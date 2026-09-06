@@ -1,6 +1,7 @@
 import { searchRead } from "@/lib/odoo/client";
 import type { Budget } from "@/lib/odoo/types";
 import { ReportTabs } from "@/components/reports/ReportTabs";
+import { DownloadPdfButton } from "@/components/reports/DownloadPdfButton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -51,8 +52,8 @@ export default async function BudgetReportPage(props: PageProps<"/reports/budget
 
   return (
     <div className="p-10">
-      <h1 className="font-heading text-2xl">Reports</h1>
-      <p className="mt-1 text-sm text-muted-foreground">
+      <h1 className="font-heading text-2xl print:hidden">Reports</h1>
+      <p className="mt-1 text-sm text-muted-foreground print:hidden">
         Planned spend against what actually landed, for the period you choose.
       </p>
 
@@ -62,26 +63,36 @@ export default async function BudgetReportPage(props: PageProps<"/reports/budget
 
       {/* Plain GET form: the period lives in the URL, so a report view can be
           bookmarked and shared, and it needs no client-side JavaScript. */}
-      <form className="mt-8 flex flex-wrap items-end gap-4">
-        <div className="space-y-1.5">
-          <Label htmlFor="from">From</Label>
-          <Input id="from" name="from" type="date" defaultValue={from} className="w-44" />
-        </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="to">To</Label>
-          <Input id="to" name="to" type="date" defaultValue={to} className="w-44" />
-        </div>
-        <Button type="submit" className="bg-accent text-accent-foreground hover:bg-accent/90">
-          Apply period
-        </Button>
-        {(from || to) && (
-          <a href="/reports/budget" className="text-sm text-muted-foreground hover:text-foreground">
-            Clear
-          </a>
-        )}
-      </form>
+      <div className="mt-8 flex flex-wrap items-end justify-between gap-4 print:hidden">
+        <form className="flex flex-wrap items-end gap-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="from">From</Label>
+            <Input id="from" name="from" type="date" defaultValue={from} className="w-44" />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="to">To</Label>
+            <Input id="to" name="to" type="date" defaultValue={to} className="w-44" />
+          </div>
+          <Button type="submit" className="bg-accent text-accent-foreground hover:bg-accent/90">
+            Apply period
+          </Button>
+          {(from || to) && (
+            <a href="/reports/budget" className="text-sm text-muted-foreground hover:text-foreground">
+              Clear
+            </a>
+          )}
+        </form>
+        <DownloadPdfButton />
+      </div>
 
-      <div className="mt-8 border border-border bg-card">
+      <div className="mb-2 mt-6 hidden print:block">
+        <h1 className="font-heading text-xl">Budget Report</h1>
+        <p className="text-sm text-muted-foreground">
+          {from || to ? `${from ? formatDate(from) : "Start"} – ${to ? formatDate(to) : "Now"}` : "All periods"}
+        </p>
+      </div>
+
+      <div className="mt-8 border border-border bg-card print:mt-0">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border text-left text-muted-foreground">

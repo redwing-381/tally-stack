@@ -6,7 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { generateReport } from "@/lib/odoo/actions";
-import { formatMoney } from "@/lib/format";
+import { formatMoney, formatDate } from "@/lib/format";
+import { ReportSummaryChart } from "@/components/charts/ReportSummaryChart";
+import { DownloadPdfButton } from "@/components/reports/DownloadPdfButton";
 import type { ReportSection } from "@/lib/odoo/types";
 
 const SECTION_LABELS: Record<ReportSection, string> = {
@@ -16,8 +18,6 @@ const SECTION_LABELS: Record<ReportSection, string> = {
   income: "Income",
   expense: "Expenses",
 };
-
-const SECTION_ORDER: ReportSection[] = ["asset", "liability", "equity", "income", "expense"];
 
 interface Line {
   section: string;
@@ -32,6 +32,38 @@ function today() {
 function firstOfMonth() {
   const d = new Date();
   return new Date(d.getFullYear(), d.getMonth(), 1).toISOString().slice(0, 10);
+}
+
+function Section({ section, lines }: { section: ReportSection; lines: Line[] }) {
+  const subtotal = lines.reduce((sum, l) => sum + l.balance, 0);
+  return (
+    <div className="border border-border bg-card">
+      <p className="border-b border-border px-4 py-3 text-sm font-medium">{SECTION_LABELS[section]}</p>
+      <table className="w-full text-sm">
+        <tbody>
+          {lines.map((l) => (
+            <tr key={l.account_id[0]} className="border-b border-border last:border-0">
+              <td className="px-4 py-2 text-muted-foreground">{l.account_id[1]}</td>
+              <td className="tabular px-4 py-2 text-right font-mono">{formatMoney(l.balance)}</td>
+            </tr>
+          ))}
+          {lines.length === 0 && (
+            <tr>
+              <td colSpan={2} className="px-4 py-6 text-center text-sm text-muted-foreground">
+                Nothing posted here yet.
+              </td>
+            </tr>
+          )}
+        </tbody>
+        <tfoot>
+          <tr className="rule-subtotal">
+            <td className="px-4 py-2.5 font-medium">Subtotal</td>
+            <td className="tabular px-4 py-2.5 text-right font-mono font-medium">{formatMoney(subtotal)}</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  );
 }
 
 export function ReportView({ reportType }: { reportType: "balance_sheet" | "profit_loss" }) {
@@ -52,7 +84,7 @@ export function ReportView({ reportType }: { reportType: "balance_sheet" | "prof
           reportType === "profit_loss" ? dateFrom : null,
         );
         setWizardId(res.wizardId);
-        setLines(res.lines);
+        setLines(res.lines as Line[]);
         setNetResult(res.netResult);
       } catch {
         toast.error("Couldn't generate the report.");
@@ -66,72 +98,92 @@ export function ReportView({ reportType }: { reportType: "balance_sheet" | "prof
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const bySection = SECTION_ORDER.map((section) => ({
-    section,
-    lines: lines.filter((l) => l.section === section),
-  })).filter((g) => g.lines.length > 0);
+  const by = (section: ReportSection) => lines.filter((l) => l.section === section);
+  const totalOf = (section: ReportSection) => by(section).reduce((sum, l) => sum + l.balance, 0);
+  const hasData = lines.length > 0;
+
+  const isBalanceSheet = reportType === "balance_sheet";
+  const left = isBalanceSheet ? "asset" : "income";
+  const right1 = isBalanceSheet ? "liability" : "expense";
+  const right2: ReportSection | null = isBalanceSheet ? "equity" : null;
+
+  const summaryData = isBalanceSheet
+    ? [
+        { name: "Assets", value: totalOf("asset") },
+        { name: "Liabilities + Capital", value: totalOf("liability") + totalOf("equity") },
+      ]
+    : [
+        { name: "Income", value: totalOf("income") },
+        { name: "Expenses", value: totalOf("expense") },
+        { name: "Net result", value: netResult },
+      ];
 
   return (
     <div>
-      <div className="flex items-end gap-4">
-        {reportType === "profit_loss" && (
+      <div className="flex flex-wrap items-end justify-between gap-4 print:hidden">
+        <div className="flex flex-wrap items-end gap-4">
+          {reportType === "profit_loss" && (
+            <div className="space-y-1.5">
+              <Label htmlFor="date-from">Date from</Label>
+              <Input id="date-from" type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
+            </div>
+          )}
           <div className="space-y-1.5">
-            <Label htmlFor="date-from">Date from</Label>
-            <Input id="date-from" type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
+            <Label htmlFor="date-to">Date to</Label>
+            <Input id="date-to" type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
           </div>
-        )}
-        <div className="space-y-1.5">
-          <Label htmlFor="date-to">Date to</Label>
-          <Input id="date-to" type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
+          <Button onClick={generate} disabled={pending} className="bg-accent text-accent-foreground hover:bg-accent/90">
+            {pending ? "Generating…" : "Generate"}
+          </Button>
         </div>
-        <Button onClick={generate} disabled={pending} className="bg-accent text-accent-foreground hover:bg-accent/90">
-          {pending ? "Generating…" : "Generate"}
-        </Button>
+        <DownloadPdfButton />
       </div>
 
-      <div className="mt-8 max-w-2xl border border-border bg-card">
-        {bySection.map((group) => {
-          const subtotal = group.lines.reduce((sum, l) => sum + l.balance, 0);
-          return (
-            <div key={group.section} className="border-b border-border last:border-0">
-              <p className="px-4 pt-4 text-sm font-medium">{SECTION_LABELS[group.section as ReportSection]}</p>
+      {/* Only visible in the printed/PDF output — the controls above and
+          the tab strip above that are both print:hidden, so without this
+          a saved PDF would open on a bare table with no title or date. */}
+      <div className="mb-6 hidden print:block">
+        <h1 className="font-heading text-xl">{isBalanceSheet ? "Balance Sheet" : "Profit & Loss"}</h1>
+        <p className="text-sm text-muted-foreground">
+          {reportType === "profit_loss" ? `${formatDate(dateFrom)} – ` : "As of "}
+          {formatDate(dateTo)}
+        </p>
+      </div>
+
+      {hasData ? (
+        <>
+          <div className="mt-8 border border-border bg-card p-6 print:border-0 print:p-0">
+            <ReportSummaryChart data={summaryData} currencySymbol="₹" />
+          </div>
+
+          <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2 print:grid-cols-2">
+            <Section section={left} lines={by(left)} />
+            <div className="space-y-6">
+              <Section section={right1} lines={by(right1)} />
+              {right2 && <Section section={right2} lines={by(right2)} />}
+            </div>
+          </div>
+
+          {reportType === "profit_loss" && (
+            <div className="mt-6 border border-border bg-card">
               <table className="w-full text-sm">
                 <tbody>
-                  {group.lines.map((l) => (
-                    <tr key={l.account_id[0]}>
-                      <td className="px-4 py-1.5 text-muted-foreground">{l.account_id[1]}</td>
-                      <td className="tabular px-4 py-1.5 text-right font-mono">{formatMoney(l.balance)}</td>
-                    </tr>
-                  ))}
-                  <tr className="rule-subtotal">
-                    <td className="px-4 py-2 font-medium">Subtotal</td>
-                    <td className="tabular px-4 py-2 text-right font-mono font-medium">{formatMoney(subtotal)}</td>
+                  <tr className="rule-total">
+                    <td className="px-4 py-3 font-medium">Net result</td>
+                    <td className="tabular px-4 py-3 text-right font-mono font-medium">
+                      {formatMoney(netResult)}
+                    </td>
                   </tr>
                 </tbody>
               </table>
             </div>
-          );
-        })}
-
-        {bySection.length === 0 && (
-          <p className="p-8 text-center text-sm text-muted-foreground">
-            No posted entries in this range yet.
-          </p>
-        )}
-
-        {reportType === "profit_loss" && bySection.length > 0 && (
-          <table className="w-full text-sm">
-            <tbody>
-              <tr className="rule-total">
-                <td className="px-4 py-3 font-medium">Net result</td>
-                <td className="tabular px-4 py-3 text-right font-mono font-medium">
-                  {formatMoney(netResult)}
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        )}
-      </div>
+          )}
+        </>
+      ) : (
+        <p className="mt-8 border border-border bg-card p-8 text-center text-sm text-muted-foreground">
+          No posted entries in this range yet.
+        </p>
+      )}
     </div>
   );
 }
