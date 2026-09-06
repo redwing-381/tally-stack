@@ -2,9 +2,8 @@ import { searchRead } from "@/lib/odoo/client";
 import type { Budget } from "@/lib/odoo/types";
 import { ReportTabs } from "@/components/reports/ReportTabs";
 import { DownloadPdfButton } from "@/components/reports/DownloadPdfButton";
+import { DateRangeFields } from "@/components/reports/DateRangeFields";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { formatMoney, formatDate } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -65,14 +64,7 @@ export default async function BudgetReportPage(props: PageProps<"/reports/budget
           bookmarked and shared, and it needs no client-side JavaScript. */}
       <div className="mt-8 flex flex-wrap items-end justify-between gap-4 print:hidden">
         <form className="flex flex-wrap items-end gap-4">
-          <div className="space-y-1.5">
-            <Label htmlFor="from">From</Label>
-            <Input id="from" name="from" type="date" defaultValue={from} className="w-44" />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="to">To</Label>
-            <Input id="to" name="to" type="date" defaultValue={to} className="w-44" />
-          </div>
+          <DateRangeFields from={from} to={to} />
           <Button type="submit" className="bg-accent text-accent-foreground hover:bg-accent/90">
             Apply period
           </Button>

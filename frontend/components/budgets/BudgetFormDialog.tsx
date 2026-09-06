@@ -21,6 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { FieldError } from "@/components/ui/field-error";
 import { saveBudget } from "@/lib/odoo/actions";
 import type { Budget } from "@/lib/odoo/types";
 
@@ -49,8 +50,34 @@ export function BudgetFormDialog({
     budget?.responsible_user_id ? String(budget.responsible_user_id[0]) : "",
   );
 
+  // Mirrors the ufa.budget constraints on the Odoo side, so the same rules
+  // are stated once here for a fast, explanatory message and once there for
+  // actual enforcement.
+  const plannedNum = Number(planned);
+  const errors = {
+    name: !name.trim() && "Give the budget a name.",
+    periodEnd:
+      periodStart && periodEnd && periodEnd < periodStart
+        ? "The end date can't be before the start date."
+        : false,
+    planned:
+      planned !== "" && (!Number.isFinite(plannedNum) || plannedNum <= 0)
+        ? "The planned amount must be greater than zero."
+        : false,
+    analytic: !analyticId && "Pick an analytic account to track against.",
+  };
+  const complete = name.trim() && periodStart && periodEnd && analyticId && planned !== "";
+  const valid = complete && !errors.periodEnd && !errors.planned;
+
+  // Moving the start past the end would leave an impossible range on screen;
+  // pull the end along instead of silently keeping it invalid.
+  function onStartChange(value: string) {
+    setPeriodStart(value);
+    if (value && periodEnd && periodEnd < value) setPeriodEnd(value);
+  }
+
   function onSave() {
-    if (!name || !periodStart || !periodEnd || !analyticId || !planned) return;
+    if (!valid) return;
     startTransition(async () => {
       try {
         await saveBudget(budget?.id ?? null, {
@@ -64,8 +91,10 @@ export function BudgetFormDialog({
         toast.success(budget ? "Budget updated." : "Budget created.");
         setOpen(false);
         router.refresh();
-      } catch {
-        toast.error("Couldn't save that budget.");
+      } catch (err) {
+        // Surface the model's own ValidationError text — it names the rule
+        // that failed, which is more use than a generic failure toast.
+        toast.error(err instanceof Error ? err.message : "Couldn't save that budget.");
       }
     });
   }
@@ -86,11 +115,26 @@ export function BudgetFormDialog({
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label htmlFor="b-start">Period start</Label>
-              <Input id="b-start" type="date" value={periodStart} onChange={(e) => setPeriodStart(e.target.value)} />
+              <Input
+                id="b-start"
+                type="date"
+                value={periodStart}
+                max={periodEnd || undefined}
+                onChange={(e) => onStartChange(e.target.value)}
+              />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="b-end">Period end</Label>
-              <Input id="b-end" type="date" value={periodEnd} onChange={(e) => setPeriodEnd(e.target.value)} />
+              {/* min greys out every day before the start in the native
+                  picker, so an impossible range can't be chosen at all. */}
+              <Input
+                id="b-end"
+                type="date"
+                value={periodEnd}
+                min={periodStart || undefined}
+                onChange={(e) => setPeriodEnd(e.target.value)}
+              />
+              <FieldError>{errors.periodEnd}</FieldError>
             </div>
           </div>
           <div className="space-y-1.5">
@@ -118,9 +162,12 @@ export function BudgetFormDialog({
               <Input
                 id="b-planned"
                 type="number"
+                min="0"
+                step="0.01"
                 value={planned}
                 onChange={(e) => setPlanned(e.target.value)}
               />
+              <FieldError>{errors.planned}</FieldError>
             </div>
             <div className="space-y-1.5">
               <Label>Responsible person</Label>
@@ -147,7 +194,7 @@ export function BudgetFormDialog({
         <DialogFooter>
           <Button
             onClick={onSave}
-            disabled={pending || !name || !periodStart || !periodEnd || !analyticId || !planned}
+            disabled={pending || !valid}
             className="bg-accent text-accent-foreground hover:bg-accent/90"
           >
             {pending ? "Saving…" : "Save budget"}

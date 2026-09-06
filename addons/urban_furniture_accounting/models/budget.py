@@ -1,4 +1,5 @@
-from odoo import api, fields, models
+from odoo import _, api, fields, models
+from odoo.exceptions import ValidationError
 
 
 class UfaBudget(models.Model):
@@ -32,6 +33,28 @@ class UfaBudget(models.Model):
         compute="_compute_actual_amount",
         help="planned_amount - actual_amount. Positive means under budget.",
     )
+
+    # Enforced here rather than only in the dialog: the frontend is not the
+    # only writer. Server Actions, the AI agent's execute route and anyone
+    # on Odoo's own screens all reach this model directly, and the database
+    # already accumulated a budget with a negative amount and an end date
+    # before its start before these existed.
+    @api.constrains("period_start", "period_end")
+    def _check_period(self):
+        for budget in self:
+            if budget.period_start and budget.period_end and budget.period_end < budget.period_start:
+                raise ValidationError(
+                    _("The period end (%(end)s) cannot be before the period start (%(start)s).",
+                      end=budget.period_end, start=budget.period_start)
+                )
+
+    @api.constrains("planned_amount")
+    def _check_planned_amount(self):
+        for budget in self:
+            if budget.planned_amount <= 0:
+                raise ValidationError(
+                    _("The planned amount must be greater than zero — got %s.", budget.planned_amount)
+                )
 
     @api.depends("analytic_account_id", "period_start", "period_end")
     def _compute_actual_amount(self):

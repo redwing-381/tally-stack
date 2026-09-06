@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { FieldError } from "@/components/ui/field-error";
 import {
   Select,
   SelectContent,
@@ -45,7 +46,15 @@ export function ProductFormDialog({
     product?.categ_id ? String(product.categ_id[0]) : categories[0] ? String(categories[0].id) : "",
   );
 
+  // A negative price isn't a product anyone sells — it silently inverts the
+  // sign of every order line built from it, so block it at the source.
+  const negative = (v: string) => v !== "" && Number(v) < 0;
+  const priceError = negative(salesPrice) && "Sales price can't be negative.";
+  const costError = negative(cost) && "Cost can't be negative.";
+  const valid = Boolean(name.trim()) && !priceError && !costError;
+
   function onSave() {
+    if (!valid) return;
     startTransition(async () => {
       try {
         await saveProduct(product?.id ?? null, {
@@ -125,20 +134,24 @@ export function ProductFormDialog({
               <Input
                 id="sales-price"
                 type="number"
+                min="0"
                 step="0.01"
                 value={salesPrice}
                 onChange={(e) => setSalesPrice(e.target.value)}
               />
+              <FieldError>{priceError}</FieldError>
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="cost">Cost</Label>
               <Input
                 id="cost"
                 type="number"
+                min="0"
                 step="0.01"
                 value={cost}
                 onChange={(e) => setCost(e.target.value)}
               />
+              <FieldError>{costError}</FieldError>
             </div>
           </div>
         </div>
@@ -146,7 +159,7 @@ export function ProductFormDialog({
         <DialogFooter>
           <Button
             onClick={onSave}
-            disabled={pending || !name}
+            disabled={pending || !valid}
             className="bg-accent text-accent-foreground hover:bg-accent/90"
           >
             {pending ? "Saving…" : "Save product"}

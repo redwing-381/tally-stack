@@ -132,12 +132,27 @@ export function ReportView({ reportType }: { reportType: "balance_sheet" | "prof
           {reportType === "profit_loss" && (
             <div className="space-y-1.5">
               <Label htmlFor="date-from">Date from</Label>
-              <Input id="date-from" type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
+              <Input
+                id="date-from"
+                type="date"
+                value={dateFrom}
+                max={dateTo || undefined}
+                onChange={(e) => {
+                  setDateFrom(e.target.value);
+                  if (e.target.value && dateTo && dateTo < e.target.value) setDateTo(e.target.value);
+                }}
+              />
             </div>
           )}
           <div className="space-y-1.5">
             <Label htmlFor="date-to">Date to</Label>
-            <Input id="date-to" type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
+            <Input
+              id="date-to"
+              type="date"
+              value={dateTo}
+              min={reportType === "profit_loss" ? dateFrom || undefined : undefined}
+              onChange={(e) => setDateTo(e.target.value)}
+            />
           </div>
           <Button onClick={generate} disabled={pending} className="bg-accent text-accent-foreground hover:bg-accent/90">
             {pending ? "Generating…" : "Generate"}

@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { FieldError } from "@/components/ui/field-error";
 import {
   Select,
   SelectContent,
@@ -64,7 +65,21 @@ export function NewOrderDialog({
     setLines((prev) => prev.map((l, idx) => (idx === i ? { ...l, ...patch } : l)));
   }
 
+  // Only lines with a product actually get sent, so validate exactly those.
+  // A zero or negative quantity posts a journal entry that contributes
+  // nothing or reverses the sign of the whole line.
+  const filled = lines.filter((l) => l.productId);
+  const badQty = filled.some((l) => !(Number(l.qty) > 0));
+  const badPrice = filled.some((l) => l.priceUnit.trim() !== "" && Number(l.priceUnit) < 0);
+  const lineError = badQty
+    ? "Every line needs a quantity greater than zero."
+    : badPrice
+      ? "A unit price can't be negative."
+      : false;
+  const valid = Boolean(partnerId) && filled.length > 0 && !lineError;
+
   function onSave() {
+    if (!valid) return;
     // Price and tax are only sent when actually overridden — "Default" leaves
     // Odoo to apply the product's own price and the customer's usual tax.
     const parsedLines = lines
@@ -192,6 +207,7 @@ export function NewOrderDialog({
                 />
                 <Input
                   type="number"
+                  min="0"
                   step="0.01"
                   placeholder="Auto"
                   value={line.priceUnit}
@@ -240,9 +256,10 @@ export function NewOrderDialog({
         </div>
 
         <DialogFooter>
+          <FieldError>{lineError}</FieldError>
           <Button
             onClick={onSave}
-            disabled={pending || !partnerId}
+            disabled={pending || !valid}
             className="bg-accent text-accent-foreground hover:bg-accent/90"
           >
             {pending ? "Creating…" : "Create order"}
